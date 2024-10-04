@@ -9,10 +9,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type StoryPart = {
   paragraph: string;
-  image: string;
+  image?: string;
 };
 
 type Story = {
@@ -25,12 +24,106 @@ type StoryDetails = {
   story_theme: string;
 };
 
+import jsPDF from "jspdf";
+
+const getImageDataUrl = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+const downloadPDF = async (story: Story) => {
+  const pdf = new jsPDF();
+  let yOffset = 20;
+  const pageWidth = pdf.internal.pageSize.width;
+  const pageHeight = pdf.internal.pageSize.height;
+  const margin = 20;
+  const contentWidth = pageWidth - 2 * margin;
+
+  // Add title
+  pdf.setFontSize(24);
+  pdf.text("Generated Story", pageWidth / 2, yOffset, { align: "center" });
+  yOffset += 15;
+
+  pdf.setFontSize(12);
+
+  for (const [index, part] of story.story.entries()) {
+    // Check if we need a new page
+    if (yOffset > pageHeight - 40) {
+      pdf.addPage();
+      yOffset = 20;
+    }
+
+    // Add paragraph number
+    pdf.setFont(undefined, "bold");
+    yOffset += 10;
+
+    // Add paragraph text
+    pdf.setFont(undefined, "normal");
+    const lines = pdf.splitTextToSize(part.paragraph, contentWidth);
+    pdf.text(lines, margin, yOffset);
+    yOffset += 5 * lines.length;
+
+    // Add image if available
+    if (part.image && part.image !== "None") {
+      try {
+        const imageDataUrl = await getImageDataUrl(part.image);
+        const imgProps = pdf.getImageProperties(imageDataUrl);
+        const imgWidth = contentWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+        // Check if image fits on current page
+        if (yOffset + imgHeight > pageHeight - margin) {
+          pdf.addPage();
+          yOffset = 20;
+        }
+
+        pdf.addImage(
+          imageDataUrl,
+          "JPEG",
+          margin,
+          yOffset,
+          imgWidth,
+          imgHeight,
+        );
+        yOffset += imgHeight + 10;
+      } catch (error) {
+        console.error("Error loading image:", error);
+        pdf.text("(Image could not be loaded)", margin, yOffset);
+        yOffset += 10;
+      }
+    }
+
+    // Add some space between paragraphs
+    yOffset += 10;
+  }
+
+  pdf.save("generated_story.pdf");
+};
+
 export default function Home() {
   const [storyDetails, setStoryDetails] = useState<StoryDetails>({
     story_type: "",
     background_setting: "",
     story_theme: "",
   });
+
+  const getImageDataUrl = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const [generatedStory, setGeneratedStory] = useState<Story | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,7 +163,6 @@ export default function Home() {
       setIsLoading(false);
     }
   };
-  console.log(generatedStory);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
@@ -84,71 +176,120 @@ export default function Home() {
           </CardHeader>
           <CardContent className="flex flex-col md:flex-row gap-8">
             <form onSubmit={handleSubmit} className="mb-5 space-y-4 flex-1">
-              <Select
-                onValueChange={(value) =>
-                  setStoryDetails((prev) => ({ ...prev, story_type: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Story Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["Detective", "Alien", "Superhero", "Time traveler"].map(
-                    (type) => (
+              <div>
+                <label
+                  htmlFor="story-type"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Main Character
+                </label>
+                <Select
+                  onValueChange={(value) =>
+                    setStoryDetails((prev) => ({ ...prev, story_type: value }))
+                  }
+                >
+                  <SelectTrigger id="story-type">
+                    <SelectValue placeholder="Select Main Character" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Detective",
+                      "Alien",
+                      "Superhero",
+                      "Time traveler",
+                      "Curious child",
+                      "Talking animal",
+                      "Fairy princess",
+                      "Brave knight",
+                      "Magical creature",
+                      "Ordinary person",
+                    ].map((type) => (
                       <SelectItem key={type} value={type}>
                         {type}
                       </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select
-                onValueChange={(value: string) =>
-                  setStoryDetails((prev) => ({
-                    ...prev,
-                    background_setting: value,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Background Setting" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[
-                    "Abandoned spaceship",
-                    "Medieval castle",
-                    "Futuristic city",
-                    "Underwater research facility",
-                  ].map((setting) => (
-                    <SelectItem key={setting} value={setting}>
-                      {setting}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div>
+                <label
+                  htmlFor="background-setting"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Story Setting
+                </label>
+                <Select
+                  onValueChange={(value: string) =>
+                    setStoryDetails((prev) => ({
+                      ...prev,
+                      background_setting: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger id="background-setting">
+                    <SelectValue placeholder="Select Story Setting" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Abandoned spaceship",
+                      "Medieval castle",
+                      "Futuristic city",
+                      "Underwater research facility",
+                      "Enchanted forest",
+                      "Magical kingdom",
+                      "Secret garden",
+                      "Treehouse village",
+                      "Candy land",
+                      "Cloud city",
+                      "Prehistoric jungle",
+                      "Haunted mansion",
+                    ].map((setting) => (
+                      <SelectItem key={setting} value={setting}>
+                        {setting}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select
-                onValueChange={(value: string) =>
-                  setStoryDetails((prev) => ({ ...prev, story_theme: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[
-                    "Solve a mystery",
-                    "Save the world",
-                    "Find a way home",
-                    "Defeat an ancient evil",
-                  ].map((theme) => (
-                    <SelectItem key={theme} value={theme}>
-                      {theme}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div>
+                <label
+                  htmlFor="story-theme"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Story Goal
+                </label>
+                <Select
+                  onValueChange={(value: string) =>
+                    setStoryDetails((prev) => ({ ...prev, story_theme: value }))
+                  }
+                >
+                  <SelectTrigger id="story-theme">
+                    <SelectValue placeholder="Select Story Goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Solve a mystery",
+                      "Save the world",
+                      "Find a way home",
+                      "Defeat an ancient evil",
+                      "Make a new friend",
+                      "Learn a valuable lesson",
+                      "Discover a hidden talent",
+                      "Break a magical curse",
+                      "Reunite a family",
+                      "Protect nature",
+                      "Spread kindness and joy",
+                      "Overcome a fear",
+                    ].map((theme) => (
+                      <SelectItem key={theme} value={theme}>
+                        {theme}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 type="submit"
                 className="w-full text-lg font-semibold py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
@@ -157,25 +298,40 @@ export default function Home() {
                 {isLoading ? "Generating..." : "Generate Story"}
               </Button>
             </form>
-            {generatedStory && (
-              <div className="flex-1 mb-4 p-4 bg-gray-50 rounded-lg overflow-y-auto max-h-[600px]">
-                {generatedStory.story.map((part, index) => (
-                  <div key={index} className="mb-6">
-                    <p className="text-sm text-gray-600 mb-2">
-                      {part.paragraph}
-                    </p>
-                    <img
-                      src={part.image}
-                      alt={`Story image ${index + 1}`}
-                      className="w-full h-auto rounded-lg shadow-md"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
+      {generatedStory && (
+        <div className="mt-8 px-4 sm:px-6 lg:px-8 max-w-full mx-auto">
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div className="p-6 flex justify-between items-center border-b">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Generated Story
+              </h2>
+              <Button
+                onClick={() => downloadPDF(generatedStory)}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition-all duration-300"
+              >
+                Download Story as PDF
+              </Button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(100vh-300px)]">
+              {generatedStory.story.map((part, index) => (
+                <div key={index} className="mb-8">
+                  <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                    {part.paragraph}
+                  </p>
+                  <img
+                    src={part.image}
+                    alt={`Story image ${index + 1}`}
+                    className="w-full h-auto rounded-lg shadow-md"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

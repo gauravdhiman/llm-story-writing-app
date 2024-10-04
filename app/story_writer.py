@@ -44,7 +44,7 @@ class StoryWriter:
     # @ell.simple(model="openai/gpt-4o-mini")
     @ell.complex(model="openai/gpt-4o-mini", response_format=StoryPragraphs)
     def generate_story(self, prompt: str):
-        """You are an expert story writer. Write a short story (2 paragraphs) based on the given prompt.
+        """You are an expert story writer. Write a short story based on the given prompt. Story MUST BE of at least 5 paragraphs or can be more, but NOT LESS THAN 5 paragprahs.
         For each paragraph, also provide a vivid image prompt that captures the essence of that paragraph.
 
         Return the result as a list of dictionaries, where each dictionary contains:
@@ -52,7 +52,7 @@ class StoryWriter:
         - 'image_prompt': A detailed prompt for generating an image based on the paragraph
         """
 
-        return f"Write a short story based on this prompt: {prompt}. Provide the story in a structured format with paragraphs and image prompts."
+        return f"Write a short story (minimum 5 paragraphs) based on this prompt: {prompt}. Provide the story in a structured format with paragraphs and image prompts for each paragraph."
 
     def generate_image(self, prompt: str) -> str:
 
