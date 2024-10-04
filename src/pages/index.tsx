@@ -9,10 +9,16 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-type Story = {
-  title?: string;
-  content: string;
+
+type StoryPart = {
+  paragraph: string;
+  image: string;
 };
+
+type Story = {
+  story: StoryPart[];
+};
+
 type StoryDetails = {
   story_type: string;
   background_setting: string;
@@ -40,19 +46,12 @@ export default function Home() {
     }
     setIsLoading(true);
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/v1/generate_story",
+      const response = await axios.post<{ prompt: string; story: StoryPart[] }>(
+        "http://localhost:9000/api/v1/generate_story",
         storyDetails,
       );
-      console.log("Response > ", response);
       if (response.data && response.data.story) {
-        setGeneratedStory({
-          title: response.data.story.title || "Generated Story",
-          content:
-            typeof response.data.story === "string"
-              ? response.data.story
-              : response.data.story.content || "No content available.",
-        });
+        setGeneratedStory({ story: response.data.story });
       } else {
         throw new Error("Invalid response format");
       }
@@ -71,6 +70,7 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+  console.log(generatedStory);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
@@ -158,13 +158,19 @@ export default function Home() {
               </Button>
             </form>
             {generatedStory && (
-              <div className="flex-1 mb-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  {generatedStory.title}
-                </h3>
-                <p className="text-sm text-gray-600 mt-2">
-                  {generatedStory.content}
-                </p>
+              <div className="flex-1 mb-4 p-4 bg-gray-50 rounded-lg overflow-y-auto max-h-[600px]">
+                {generatedStory.story.map((part, index) => (
+                  <div key={index} className="mb-6">
+                    <p className="text-sm text-gray-600 mb-2">
+                      {part.paragraph}
+                    </p>
+                    <img
+                      src={part.image}
+                      alt={`Story image ${index + 1}`}
+                      className="w-full h-auto rounded-lg shadow-md"
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

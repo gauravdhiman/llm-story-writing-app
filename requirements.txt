@@ -3,3 +3,4 @@ pydantic
 python-dotenv
 openai
 ell-ai
+replicate

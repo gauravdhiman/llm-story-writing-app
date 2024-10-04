@@ -5,6 +5,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# images / assets
+images
+assets
+public
+
+# log
+*.log
 
 # Ignore environment files
 .env
