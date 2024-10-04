@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+
 type StoryPart = {
   paragraph: string;
   image?: string;
@@ -209,149 +211,165 @@ export default function Home() {
           isVisible={inputCardVisible}
         />
       )}
-      {(inputCardVisible || !isStoryGenerated) && (
-        <div className="relative py-3 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-          <Card className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20 w-full max-w-5xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-4xl font-bold text-center text-gray-800">
-                Story Writer
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col md:flex-row gap-8">
-              <form onSubmit={handleSubmit} className="mb-5 space-y-4 flex-1">
-                <div>
-                  <label
-                    htmlFor="story-type"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Main Character
-                  </label>
-                  <Select
-                    onValueChange={(value) =>
-                      setStoryDetails((prev) => ({
-                        ...prev,
-                        story_type: value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger id="story-type">
-                      <SelectValue placeholder="Select Main Character" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[
-                        "Detective",
-                        "Alien",
-                        "Superhero",
-                        "Time traveler",
-                        "Curious child",
-                        "Talking animal",
-                        "Fairy princess",
-                        "Brave knight",
-                        "Magical creature",
-                        "Ordinary person",
-                      ].map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      <AnimatePresence>
+        {(inputCardVisible || !isStoryGenerated) && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <motion.div
+              initial={{ y: "-100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="relative py-3 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
+              <Card className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20 w-full max-w-5xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="text-4xl font-bold text-center text-gray-800">
+                    Story Writer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col md:flex-row gap-8">
+                  <form onSubmit={handleSubmit} className="mb-5 space-y-4 flex-1">
+                    <div>
+                      <label
+                        htmlFor="story-type"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Main Character
+                      </label>
+                      <Select
+                        onValueChange={(value) =>
+                          setStoryDetails((prev) => ({
+                            ...prev,
+                            story_type: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="story-type">
+                          <SelectValue placeholder="Select Main Character" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[
+                            "Detective",
+                            "Alien",
+                            "Superhero",
+                            "Time traveler",
+                            "Curious child",
+                            "Talking animal",
+                            "Fairy princess",
+                            "Brave knight",
+                            "Magical creature",
+                            "Ordinary person",
+                          ].map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div>
-                  <label
-                    htmlFor="background-setting"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Story Setting
-                  </label>
-                  <Select
-                    onValueChange={(value: string) =>
-                      setStoryDetails((prev) => ({
-                        ...prev,
-                        background_setting: value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger id="background-setting">
-                      <SelectValue placeholder="Select Story Setting" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[
-                        "Abandoned spaceship",
-                        "Medieval castle",
-                        "Futuristic city",
-                        "Underwater research facility",
-                        "Enchanted forest",
-                        "Magical kingdom",
-                        "Secret garden",
-                        "Treehouse village",
-                        "Candy land",
-                        "Cloud city",
-                        "Prehistoric jungle",
-                        "Haunted mansion",
-                      ].map((setting) => (
-                        <SelectItem key={setting} value={setting}>
-                          {setting}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <div>
+                      <label
+                        htmlFor="background-setting"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Story Setting
+                      </label>
+                      <Select
+                        onValueChange={(value: string) =>
+                          setStoryDetails((prev) => ({
+                            ...prev,
+                            background_setting: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="background-setting">
+                          <SelectValue placeholder="Select Story Setting" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[
+                            "Abandoned spaceship",
+                            "Medieval castle",
+                            "Futuristic city",
+                            "Underwater research facility",
+                            "Enchanted forest",
+                            "Magical kingdom",
+                            "Secret garden",
+                            "Treehouse village",
+                            "Candy land",
+                            "Cloud city",
+                            "Prehistoric jungle",
+                            "Haunted mansion",
+                          ].map((setting) => (
+                            <SelectItem key={setting} value={setting}>
+                              {setting}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div>
-                  <label
-                    htmlFor="story-theme"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Story Goal
-                  </label>
-                  <Select
-                    onValueChange={(value: string) =>
-                      setStoryDetails((prev) => ({
-                        ...prev,
-                        story_theme: value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger id="story-theme">
-                      <SelectValue placeholder="Select Story Goal" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[
-                        "Solve a mystery",
-                        "Save the world",
-                        "Find a way home",
-                        "Defeat an ancient evil",
-                        "Make a new friend",
-                        "Learn a valuable lesson",
-                        "Discover a hidden talent",
-                        "Break a magical curse",
-                        "Reunite a family",
-                        "Protect nature",
-                        "Spread kindness and joy",
-                        "Overcome a fear",
-                        ].map((theme) => (
-                          <SelectItem key={theme} value={theme}>
-                            {theme}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full text-lg font-semibold py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Generating..." : "Generate Story"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                    <div>
+                      <label
+                        htmlFor="story-theme"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Story Goal
+                      </label>
+                      <Select
+                        onValueChange={(value: string) =>
+                          setStoryDetails((prev) => ({
+                            ...prev,
+                            story_theme: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="story-theme">
+                          <SelectValue placeholder="Select Story Goal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[
+                            "Solve a mystery",
+                            "Save the world",
+                            "Find a way home",
+                            "Defeat an ancient evil",
+                            "Make a new friend",
+                            "Learn a valuable lesson",
+                            "Discover a hidden talent",
+                            "Break a magical curse",
+                            "Reunite a family",
+                            "Protect nature",
+                            "Spread kindness and joy",
+                            "Overcome a fear",
+                            ].map((theme) => (
+                              <SelectItem key={theme} value={theme}>
+                                {theme}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full text-lg font-semibold py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Generating..." : "Generate Story"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {generatedStory && (
         <div
           className={`mt-8 px-4 sm:px-6 lg:px-8 max-w-full mx-auto ${!inputCardVisible ? "w-full" : ""}`}
