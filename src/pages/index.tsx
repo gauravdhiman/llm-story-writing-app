@@ -26,6 +26,7 @@ type StoryDetails = {
 
 import jsPDF from "jspdf";
 
+
 const getImageDataUrl = async (url: string): Promise<string> => {
   const response = await fetch(url);
   const blob = await response.blob();
@@ -52,30 +53,27 @@ const downloadPDF = async (story: Story) => {
 
   pdf.setFontSize(12);
 
-  for (const [index, part] of story.story.entries()) {
+  for (const [index, part] of Object.entries(story.story)) {
     // Check if we need a new page
     if (yOffset > pageHeight - 40) {
       pdf.addPage();
       yOffset = 20;
     }
 
-    // Add paragraph number
-    pdf.setFont(undefined, "bold");
-    yOffset += 10;
-
-    // Add paragraph text
-    pdf.setFont(undefined, "normal");
-    const lines = pdf.splitTextToSize(part.paragraph, contentWidth);
-    pdf.text(lines, margin, yOffset);
-    yOffset += 5 * lines.length;
-
+    // Determine image placement (left for even indices, right for odd)
+    const isImageOnLeft = Number(index) % 2 === 0;
+    let textX = margin;
+    let textWidth = contentWidth;
+    let imageX = margin;
+    let imageWidth = 0;
+    let imgHeight = 0;
     // Add image if available
     if (part.image && part.image !== "None") {
       try {
         const imageDataUrl = await getImageDataUrl(part.image);
         const imgProps = pdf.getImageProperties(imageDataUrl);
-        const imgWidth = contentWidth;
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        imageWidth = contentWidth / 2;
+        imgHeight = (imgProps.height * imageWidth) / imgProps.width;
 
         // Check if image fits on current page
         if (yOffset + imgHeight > pageHeight - margin) {
@@ -83,15 +81,23 @@ const downloadPDF = async (story: Story) => {
           yOffset = 20;
         }
 
+        if (isImageOnLeft) {
+          imageX = margin;
+          textX = margin + imageWidth + 5;
+        } else {
+          imageX = pageWidth - margin - imageWidth;
+          textX = margin;
+        }
+        textWidth = contentWidth - imageWidth - 5;
+
         pdf.addImage(
           imageDataUrl,
           "JPEG",
-          margin,
+          imageX,
           yOffset,
-          imgWidth,
-          imgHeight,
+          imageWidth,
+          imgHeight
         );
-        yOffset += imgHeight + 10;
       } catch (error) {
         console.error("Error loading image:", error);
         pdf.text("(Image could not be loaded)", margin, yOffset);
@@ -99,12 +105,31 @@ const downloadPDF = async (story: Story) => {
       }
     }
 
+    // Add paragraph text
+    pdf.setFont("", "normal"); // Use default font
+    const lines = pdf.splitTextToSize(part.paragraph, textWidth);
+    let textYOffset = yOffset;
+    for (const line of lines) {
+      pdf.text(line, textX, textYOffset);
+      textYOffset += 5;
+      if (textYOffset > pageHeight - margin) {
+        pdf.addPage();
+        textYOffset = 20;
+        textX = margin;
+        textWidth = contentWidth;
+      }
+    }
+
+    // Update yOffset to the maximum of text or image
+    yOffset = Math.max(yOffset + (imageWidth ? imgHeight : 0), textYOffset);
+
     // Add some space between paragraphs
     yOffset += 10;
   }
 
   pdf.save("generated_story.pdf");
 };
+
 
 const ToggleButton = ({
   onClick,
@@ -151,6 +176,7 @@ export default function Home() {
         storyDetails,
       );
       if (response.data && response.data.story) {
+        console.log('Received story: ', response.data.story);
         setGeneratedStory({ story: response.data.story });
         setInputCardVisible(false);
         setIsStoryGenerated(true); // Set story generated state to true
@@ -173,64 +199,7 @@ export default function Home() {
     }
   };
 
-  const downloadPDF = async (story: Story) => {
-    const pdf = new jsPDF();
-    let yOffset = 20;
-    const pageWidth = pdf.internal.pageSize.width;
-    const pageHeight = pdf.internal.pageSize.height;
-    const margin = 20;
-    const contentWidth = pageWidth - 2 * margin;
-
-    pdf.setFontSize(24);
-    pdf.text("Generated Story", pageWidth / 2, yOffset, { align: "center" });
-    yOffset += 15;
-
-    pdf.setFontSize(12);
-
-    for (const part of story.story) {
-      if (yOffset > pageHeight - 40) {
-        pdf.addPage();
-        yOffset = 20;
-      }
-
-      pdf.setFont("helvetica", "normal");
-      const lines = pdf.splitTextToSize(part.paragraph, contentWidth);
-      pdf.text(lines, margin, yOffset);
-      yOffset += 5 * lines.length;
-
-      if (part.image && part.image !== "None") {
-        try {
-          const imageDataUrl = await getImageDataUrl(part.image);
-          const imgProps = pdf.getImageProperties(imageDataUrl);
-          const imgWidth = contentWidth;
-          const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-
-          if (yOffset + imgHeight > pageHeight - margin) {
-            pdf.addPage();
-            yOffset = 20;
-          }
-
-          pdf.addImage(
-            imageDataUrl,
-            "JPEG",
-            margin,
-            yOffset,
-            imgWidth,
-            imgHeight,
-          );
-          yOffset += imgHeight + 10;
-        } catch (error) {
-          console.error("Error loading image:", error);
-          pdf.text("(Image could not be loaded)", margin, yOffset);
-          yOffset += 10;
-        }
-      }
-
-      yOffset += 10;
-    }
-
-    pdf.save("generated_story.pdf");
-  };
+  console.log(generatedStory);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
@@ -363,11 +332,11 @@ export default function Home() {
                         "Protect nature",
                         "Spread kindness and joy",
                         "Overcome a fear",
-                      ].map((theme) => (
-                        <SelectItem key={theme} value={theme}>
-                          {theme}
-                        </SelectItem>
-                      ))}
+                        ].map((theme) => (
+                          <SelectItem key={theme} value={theme}>
+                            {theme}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -401,15 +370,19 @@ export default function Home() {
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(100vh-300px)]">
               {generatedStory.story.map((part, index) => (
-                <div key={index} className="mb-8">
+                <div key={index} className="mb-8 overflow-hidden clearfix">
+                  {part.image && part.image !== "None" ? (
+                    <div className={`mb-4 w-full md:w-1/2 ${index % 2 === 0 ? 'md:float-left md:mr-4' : 'md:float-right md:ml-4'}`}>
+                      <img
+                        src={part.image}
+                        alt={`Story image ${index + 1}`}
+                        className="w-full h-auto rounded-lg shadow-md"
+                      />
+                    </div>
+                  ) : null}
                   <p className="text-lg text-gray-700 mb-4 leading-relaxed">
                     {part.paragraph}
                   </p>
-                  <img
-                    src={part.image}
-                    alt={`Story image ${index + 1}`}
-                    className="w-full h-auto rounded-lg shadow-md"
-                  />
                 </div>
               ))}
             </div>
