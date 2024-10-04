@@ -132,6 +132,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [inputCardVisible, setInputCardVisible] = useState(true);
 
+  const [isStoryGenerated, setIsStoryGenerated] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (
@@ -150,7 +152,8 @@ export default function Home() {
       );
       if (response.data && response.data.story) {
         setGeneratedStory({ story: response.data.story });
-        setInputCardVisible(false); // Hide input card after story generation
+        setInputCardVisible(false);
+        setIsStoryGenerated(true); // Set story generated state to true
       } else {
         throw new Error("Invalid response format");
       }
@@ -231,11 +234,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <ToggleButton
-        onClick={() => setInputCardVisible(!inputCardVisible)}
-        isVisible={inputCardVisible}
-      />
-      {inputCardVisible && (
+      {isStoryGenerated && (
+        <ToggleButton
+          onClick={() => setInputCardVisible(!inputCardVisible)}
+          isVisible={inputCardVisible}
+        />
+      )}
+      {(inputCardVisible || !isStoryGenerated) && (
         <div className="relative py-3 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
           <Card className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20 w-full max-w-5xl mx-auto">
