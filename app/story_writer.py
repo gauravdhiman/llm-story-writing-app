@@ -32,11 +32,15 @@ class StoryPragraph(BaseModel):
     # summary: str = Field(description="A brief summary of the movie")
 
 class StoryPragraphs(BaseModel):
+    title: str = Field(description="Title of the story")
     paragraphs: List[StoryPragraph] = Field(description="List of objects of type StoryParagraph")
 
 class StoryWriter:
     def __init__(self):
-        self.stories_written = []
+        self.story = {
+            "title": "",
+            "paragraphs": []
+        }
         self.image_folder = Path("images")
         self.image_folder.mkdir(exist_ok=True)
 
@@ -55,7 +59,6 @@ class StoryWriter:
         return f"Write a short story (minimum 5 paragraphs) based on this prompt: {prompt}. Provide the story in a structured format with paragraphs and image prompts for each paragraph."
 
     def generate_image(self, prompt: str) -> str:
-
         try:
             image_url = replicate.run(
                 "black-forest-labs/flux-1.1-pro",
@@ -86,15 +89,13 @@ class StoryWriter:
         # story_structure = StoryPragraphs(paragraphs=[para_obj])
 
         story_structure = story_structure.parsed
-
+        self.story['title'] = story_structure.title
         for para_obj in story_structure.paragraphs:
-            # para_obj = story_structure.parsed
-
             image_path = self.generate_image(para_obj.image_prompt)
-            self.stories_written.append({'paragraph': para_obj.paragraph, 'image': image_path})
+            self.story['paragraphs'].append({'paragraph': para_obj.paragraph, 'image': image_path})
 
-        return {"story": self.stories_written}
+        return self.story
 
     def get_stories(self) -> list[list[dict[str, str]]]:
 
-        return self.stories_written
+        return self.story

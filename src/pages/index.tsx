@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X } from "lucide-react"; // Add this import at the top of the file
 
 type StoryPart = {
   paragraph: string;
@@ -17,7 +18,8 @@ type StoryPart = {
 };
 
 type Story = {
-  story: StoryPart[];
+  title: string;
+  paragraphs: StoryPart[];
 };
 
 type StoryDetails = {
@@ -50,12 +52,12 @@ const downloadPDF = async (story: Story) => {
 
   // Add title
   pdf.setFontSize(24);
-  pdf.text("Generated Story", pageWidth / 2, yOffset, { align: "center" });
+  pdf.text(story.title || "Generated Story", pageWidth / 2, yOffset, { align: "center" });
   yOffset += 15;
 
   pdf.setFontSize(12);
 
-  for (const [index, part] of Object.entries(story.story)) {
+  for (const [index, part] of Object.entries(story.paragraphs)) {
     // Check if we need a new page
     if (yOffset > pageHeight - 40) {
       pdf.addPage();
@@ -142,9 +144,9 @@ const ToggleButton = ({
 }) => (
   <Button
     onClick={onClick}
-    className="fixed top-4 left-4 z-50 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition-all duration-300"
+    className="fixed top-4 left-4 z-50 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold p-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300"
   >
-    {isVisible ? "Hide Input" : "Show Input"}
+    {isVisible ? <X size={24} /> : <Menu size={24} />}
   </Button>
 );
 
@@ -173,13 +175,12 @@ export default function Home() {
     }
     setIsLoading(true);
     try {
-      const response = await axios.post<{ prompt: string; story: StoryPart[] }>(
+      const response = await axios.post<{ prompt: string; story: Story }>(
         "http://localhost:9000/api/v1/generate_story",
         storyDetails,
       );
       if (response.data && response.data.story) {
-        console.log('Received story: ', response.data.story);
-        setGeneratedStory({ story: response.data.story });
+        setGeneratedStory(response.data.story);
         setInputCardVisible(false);
         setIsStoryGenerated(true); // Set story generated state to true
       } else {
@@ -200,8 +201,6 @@ export default function Home() {
       setIsLoading(false);
     }
   };
-
-  console.log(generatedStory);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
@@ -378,7 +377,7 @@ export default function Home() {
           <div className="bg-white shadow-lg rounded-lg overflow-hidden">
             <div className="p-6 flex justify-between items-center border-b">
               <h2 className="text-2xl font-bold text-gray-800">
-                Generated Story
+                {generatedStory.title || "Generated Story"}
               </h2>
               <Button
                 onClick={() => downloadPDF(generatedStory)}
@@ -388,7 +387,7 @@ export default function Home() {
               </Button>
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(100vh-300px)]">
-              {generatedStory.story.map((part, index) => (
+              {generatedStory.paragraphs.map((part, index) => (
                 <div key={index} className="mb-8 overflow-hidden clearfix">
                   {part.image && part.image !== "None" ? (
                     <div className={`mb-4 w-full md:w-1/2 ${index % 2 === 0 ? 'md:float-left md:mr-4' : 'md:float-right md:ml-4'}`}>

@@ -56,7 +56,7 @@ async def generate_story(request: Request, story_request: StoryRequest):
         story = writer.write_story(prompt)
 
         # Convert local image paths to URLs and handle image generation failures
-        for item in story['story']:
+        for item in story['paragraphs']:
             if 'image' in item and item['image']:
                 item['image'] = str(request.url_for('images', path=os.path.basename(item['image'])))
             else:
@@ -64,8 +64,8 @@ async def generate_story(request: Request, story_request: StoryRequest):
             # item.pop('image_path', None)  # Remove the image_path key
         logger.info("Image paths converted successfully")
 
-        logger.info(f"Returning generated story: {story['story']}")
-        return {"prompt": prompt, "story": story['story']}
+        logger.info(f"Returning generated story: {story}")
+        return {"prompt": prompt, "story": story}
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=f"Invalid input: {str(ve)}")
     except TypeError as te:
